@@ -14,26 +14,29 @@ Vagrant.configure("2") do |config|
         echo "" >> /etc/hosts
     #Install git
         yum install git -y
-    #Create a folder for git if it doesn't exist
-        if ! [ -d /home/vagrant/devops_training ]
-          then
-            mkdir /home/vagrant/devops_training
-          else
-          echo "Directory /home/vagrant/devops_training already exists"
-        fi
-    #Clone the repository
-        if ! [ -f /home/vagrant/devops_training/README.md ]
-          then
-            git clone https://github.com/Sstrikers/devops_training.git /home/vagrant/devops_training          
-          else
-          echo "Repository devops_training already exists"
-        fi
-    #Switch to new branch task2
-        cd /home/vagrant/devops_training/
-        git checkout task2
-    #Print to console context of the file
-        cat /home/vagrant/devops_training/Task2file
+    #Allow public key login
+        sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
       SHELL
+      server1.vm.provision "shell", privileged:false, inline: <<-SHELL
+          #Clone the repository
+        if ! [ -f $HOME/devops_training/README.md ]
+          then
+            git clone -b task2 https://github.com/Sstrikers/devops_training.git
+          else
+            cat devops_training/Task2file
+        fi
+        if ! [ -f $HOME/.ssh/id_rsa.pub ]
+          then
+          ssh-keygen -t rsa -f $HOME/.ssh/id_rsa -q -N ""
+          mkdir /vagrant/server1/
+          cp -f $HOME/.ssh/id_rsa.pub /vagrant/server1/id_rsa.pub
+        fi
+        if [ -f /vagrant/server2/id_rsa.pub ] 
+          then
+            cat /vagrant/server2/id_rsa.pub >> $HOME/.ssh/authorized_keys
+            rm /vagrant/server2/id_rsa.pub
+        fi
+        SHELL
     end
 
     config.vm.define "server2" do |server2|
@@ -45,8 +48,24 @@ Vagrant.configure("2") do |config|
         echo "" >> /etc/hosts
         grep 'server1' /etc/hosts || echo '192.168.56.10 server1' >> /etc/hosts
         echo "" >> /etc/hosts   
+    #Allow public key login
+        sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+      SHELL
+      server2.vm.provision "shell", privileged:false, inline: <<-SHELL
+        if ! [ -f $HOME/.ssh/id_rsa.pub ]
+          then
+          ssh-keygen -t rsa -f $HOME/.ssh/id_rsa -q -N ""
+          mkdir /vagrant/server2/
+          cp -f $HOME/.ssh/id_rsa.pub /vagrant/server2/id_rsa.pub 
+        fi
+        if [ -f /vagrant/server1/id_rsa.pub ] 
+          then
+          cat  /vagrant/server1/id_rsa.pub >> $HOME/.ssh/authorized_keys
+          rm /vagrant/server1/id_rsa.pub
+        fi
       SHELL
     end
+
 end
 
 
