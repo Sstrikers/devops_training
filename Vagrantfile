@@ -47,55 +47,31 @@ Vagrant.configure("2") do |config|
 		SHELL
 	end
 
-	config.vm.define "tomcat1" do |tomcat1|
-		#Set VM tomcat1 & network & memory
-		tomcat1.vm.hostname = "tomcat1"
-		tomcat1.vm.provider "virtualbox" do |v|
-			v.memory = 1024
+	(1..2).each do |i|
+		config.vm.define "tomcat#{i}" do |tomcat|
+			#Set VM tomcat & network & memory
+			tomcat.vm.hostname = "tomcat#{i}"
+			tomcat.vm.provider "virtualbox" do |v|
+				v.memory = 1024
+			end
+			tomcat.vm.network "private_network", ip: "192.168.56.1#{i}"
+			tomcat.vm.provision "shell", inline: <<-SHELL
+			#Install tomcat
+			yum install tomcat tomcat-webapps tomcat-admin-webapps -y
+			systemctl enable tomcat 
+			systemctl start tomcat 
+			#Allow ajp13 protocol port
+			firewall-cmd --zone=public --add-port=8009/tcp --permanent
+			firewall-cmd --reload
+			#Add application to the tomcat server if it not exists
+			mkdir /usr/share/tomcat/webapps/test
+			if ! [ -f /usr/share/tomcat/webapps/test/index.html ]
+				then
+					echo "tomcat#{i}" >> /usr/share/tomcat/webapps/test/index.html
+				else 
+					echo "File /usr/share/tomcat/webapps/test/index.html already exists"
+			fi
+			SHELL
 		end
-		tomcat1.vm.network "private_network", ip: "192.168.56.11"
-		tomcat1.vm.provision "shell", inline: <<-SHELL
-		#Install tomcat
-		yum install tomcat tomcat-webapps tomcat-admin-webapps -y
-		systemctl enable tomcat 
-		systemctl start tomcat 
-		#Allow ajp13 protocol port
-		firewall-cmd --zone=public --add-port=8009/tcp --permanent
-		firewall-cmd --reload
-		#Add application to the tomcat1 server if it not exists
-		mkdir /usr/share/tomcat/webapps/test
-		if ! [ -f /usr/share/tomcat/webapps/test/index.html ]
-			then
-				echo "tomcat1" >> /usr/share/tomcat/webapps/test/index.html
-			else 
-				echo "File /usr/share/tomcat/webapps/test/index.html already exists"
-		fi
-		SHELL
-	end
-
-	config.vm.define "tomcat2" do |tomcat2|
-		#Set VM tomcat2 & network & memory
-		tomcat2.vm.hostname = "tomcat2"
-		tomcat2.vm.provider "virtualbox" do |v|
-			v.memory = 1024
-		end
-		tomcat2.vm.network "private_network", ip: "192.168.56.12"
-		tomcat2.vm.provision "shell", inline: <<-SHELL
-		#Install tomcat
-		yum install tomcat tomcat-webapps tomcat-admin-webapps -y
-		systemctl enable tomcat 
-		systemctl start tomcat 
-		#Allow ajp13 protocol port
-		firewall-cmd --zone=public --add-port=8009/tcp --permanent
-		firewall-cmd --reload
-		#Add application to the tomcat2 server if it not exists
-		mkdir /usr/share/tomcat/webapps/test
-		if ! [ -f /usr/share/tomcat/webapps/test/index.html ]
-			then
-				echo "tomcat2" >> /usr/share/tomcat/webapps/test/index.html
-			else 
-				echo "File /usr/share/tomcat/webapps/test/index.html already exists"
-		fi
-		SHELL
 	end
 end
