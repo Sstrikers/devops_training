@@ -1,4 +1,5 @@
-
+#Define count of virtual machine instances 
+VM_COUNT = 5
 Vagrant.configure("2") do |config|
 	config.vm.box = "bertvv/centos72"
 	config.vm.define "apache" do |apache|
@@ -6,11 +7,9 @@ Vagrant.configure("2") do |config|
 		apache.vm.hostname = "apache"
 		apache.vm.network "private_network", ip: "192.168.56.10"
 		apache.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
-		apache.vm.provision "shell", inline: <<-SHELL
+		apache.vm.provision "shell",  inline: <<-SHELL
 		#Install httpd
 		yum install httpd -y
-		systemctl enable httpd
-		systemctl start httpd
 		#Allow http port
 		firewall-cmd --zone=public --add-port=80/tcp --permanent
 		firewall-cmd --reload
@@ -21,14 +20,15 @@ Vagrant.configure("2") do |config|
 			then
 				echo "worker.list=lb" >> /etc/httpd/conf/workers.properties
 				echo "worker.lb.type=lb" >> /etc/httpd/conf/workers.properties
-				echo "worker.lb.balance_workers=tomcat1, tomcat2" >> /etc/httpd/conf/workers.properties
+				echo "worker.lb.balance_workers=" >> /etc/httpd/conf/workers.properties
 				echo "worker.list=lb" >> /etc/httpd/conf/workers.properties
-				echo "worker.tomcat1.host=192.168.56.11" >> /etc/httpd/conf/workers.properties
-				echo "worker.tomcat1.port=8009" >> /etc/httpd/conf/workers.properties
-				echo "worker.tomcat1.type=ajp13" >> /etc/httpd/conf/workers.properties
-				echo "worker.tomcat2.host=192.168.56.12" >> /etc/httpd/conf/workers.properties
-				echo "worker.tomcat2.port=8009" >> /etc/httpd/conf/workers.properties
-				echo "worker.tomcat2.type=ajp13" >> /etc/httpd/conf/workers.properties
+				for (( i=1; i<="(#{VM_COUNT}-1)"; i++))
+					do
+						sed -i "/^worker.lb.balance_workers/ s/$/tomcat$i,/" /etc/httpd/conf/workers.properties
+						echo "worker.tomcat$i.host=192.168.56.1$i" >> /etc/httpd/conf/workers.properties
+						echo "worker.tomcat$i.port=8009" >> /etc/httpd/conf/workers.properties
+						echo "worker.tomcat$i.type=ajp13" >> /etc/httpd/conf/workers.properties
+				done
 			else 
 				echo "File /etc/httpd/conf/workers.properties already exists"
 		fi
@@ -40,19 +40,21 @@ Vagrant.configure("2") do |config|
 				echo "JkLogFile logs/mod_jk.log" >> /etc/httpd/conf.d/test_lb.conf
 				echo "JkLogLevel info" >> /etc/httpd/conf.d/test_lb.conf
 				echo "JkMount /test* lb" >> /etc/httpd/conf.d/test_lb.conf
-				systemctl restart httpd
+				systemctl enable httpd
+				systemctl start httpd
 			else
 				echo "File /etc/httpd/conf.d/test_lb.conf already exists"
 		fi
 		SHELL
 	end
+	
 
-	(1..2).each do |i|
+	(1..(VM_COUNT-1)).each do |i|
 		config.vm.define "tomcat#{i}" do |tomcat|
 			#Set VM tomcat & network & memory
 			tomcat.vm.hostname = "tomcat#{i}"
 			tomcat.vm.provider "virtualbox" do |v|
-				v.memory = 1024
+				v.memory = 512
 			end
 			tomcat.vm.network "private_network", ip: "192.168.56.1#{i}"
 			tomcat.vm.provision "shell", inline: <<-SHELL
