@@ -1,0 +1,26 @@
+apply plugin : 'war'
+repositories {
+	mavenCentral()
+}
+dependencies {
+	compile group: 'log4j', name: 'log4j', version: '1.2.17'
+	compile group: 'org.apache.commons', name: 'commons-io', version: '1.3.2'
+}
+
+war {
+	baseName = buildName
+	version = buildVersion
+
+}
+
+task addVersionToFile << {
+	println "ADD VERSION!!!!!!!!!!!!!!!!!!!!"
+	FileWriter file = new FileWriter("$projectDir/build/resources/main/greeting.txt", true)
+	file.println();
+	file.print("Current version is "+buildVersion);
+	file.close();
+}
+
+task incrementVersion << {
+	println "Increment version " + buildVersion
+}
