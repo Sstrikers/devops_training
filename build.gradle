@@ -13,14 +13,34 @@ war {
 
 }
 
+processResources << {
+	addVersionToFile.execute()
+} 
+
 task addVersionToFile << {
-	println "ADD VERSION!!!!!!!!!!!!!!!!!!!!"
-	FileWriter file = new FileWriter("$projectDir/build/resources/main/greeting.txt", true)
-	file.println();
-	file.print("Current version is "+buildVersion);
-	file.close();
+	String separator = System.getProperty("line.separator")
+	File file = new File("$projectDir/build/resources/main/greeting.txt")
+	file.append(separator+"Current version is "+buildVersion)
+	
 }
 
 task incrementVersion << {
-	println "Increment version " + buildVersion
+	//Open gradle.properties file and get properties 
+	Properties properties = new Properties()
+	FileInputStream pReadFile = new FileInputStream("gradle.properties")
+	properties.load(pReadFile)
+	//Parsing version and increment build number
+		String build = properties.getProperty('buildVersion')
+		String[] parseVersion
+		parseVersion = build.split("\\.")
+		parseVersion[2] = String.valueOf(Integer.parseInt(parseVersion[2])+1)
+		build = parseVersion[0]+"."+parseVersion[1]+"."+parseVersion[2]
+		println(build)
+	//Setting new version into properties and save file gradle.properties
+	properties.setProperty('buildVersion', build)
+	FileOutputStream pWriteFile = new FileOutputStream("gradle.properties")
+	properties.store(pWriteFile, "")
+	pReadFile.close()
+	pWriteFile.close()
+	
 }
