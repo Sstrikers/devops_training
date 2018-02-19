@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <displayName>JenkinsWorkspace</displayName>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.7.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/Sstrikers/devops_training</url>
+        <credentialsId>a1e12aae-22fe-4732-82d4-8c4cde4e8392</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/task5</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <customWorkspace>C:\JenkinsWorkspace</customWorkspace>
+  <builders>
+    <hudson.tasks.BatchFile>
+      <command>cd &quot;C:\JenkinsWorkspace\samples\MusicStore&quot;&#xd;
+dotnet publish --configuration release --framework netcoreapp2.0 --output &quot;C:\Applications\TestBuild&quot;</command>
+    </hudson.tasks.BatchFile>
+    <hudson.tasks.BatchFile>
+      <command>cd &quot;C:\Applications\TestBuild&quot;&#xd;
+copy &quot;C:\JenkinsWorkspace\samples\MusicStore.nuspec&quot; &quot;C:\Applications\TestBuild&quot;&#xd;
+nuget pack MusicStore.nuspec&#xd;
+</command>
+    </hudson.tasks.BatchFile>
+    <hudson.tasks.BatchFile>
+      <command>cd &quot;C:\Applications\TestBuild&quot;&#xd;
+Octo.exe push --package MusicStore.1.0.0.nupkg --replace-existing --server http://localhost --apiKey API-3NFQMJGVOZDV4HSZ7VC5GEVOXQQ</command>
+    </hudson.tasks.BatchFile>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
