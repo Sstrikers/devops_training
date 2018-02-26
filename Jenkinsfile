@@ -1,6 +1,5 @@
 def currentVersion
 def nexusURL = 'http://apache:8081/nexus/content/repositories/snapshots'
-def responseTomcat
 def branch = 'task6'
 def appName = 'test.war'
 def git = 'https://github.com/Sstrikers/devops_training'
