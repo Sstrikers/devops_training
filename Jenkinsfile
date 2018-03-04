@@ -1,11 +1,11 @@
 def currentVersion
+def branch = 'task7'
+def appFile = 'test.war'
+def appName = 'test'
+def repositoryURL = '192.168.56.10:5000'
+def nodeURL = 'http://192.168.56.11:8080/test/'
 def nexusURL = 'http://apache:8081/nexus/content/repositories/snapshots'
-def branch = 'task6'
-def appName = 'test.war'
 def git = 'https://github.com/Sstrikers/devops_training'
-def jkmanagerURL = 'apache:80/jkmanager/'
-def nodeName = 'tomcat'
-def tomcatDir = '/usr/share/tomcat/webapps/'
 
 node ('master'){
     stage ('Clone'){
@@ -18,34 +18,36 @@ node ('master'){
         sh './gradlew clean && ./gradlew incrementVersion && ./gradlew build'
     }
     
-    stage ('Deploy to Nexus'){
+    stage ('Upload to Nexus'){
         withCredentials([usernamePassword(credentialsId: 'fa9faa5f-fe0f-4fa5-ba7d-73aae6208da1', passwordVariable: 'nexusPassword', usernameVariable: 'nexusLogin')]) {
             def props = readProperties  file:'gradle.properties'
             currentVersion = props['buildVersion']
-            nexusURL = nexusURL+'/'+branch+'/'+currentVersion+'/'+appName
+            nexusURL = nexusURL+'/'+branch+'/'+currentVersion+'/'+appFile
             dir ('build/libs'){
                 sh "curl -XPUT -u $nexusLogin:$nexusPassword -T $branch-*.war $nexusURL"
             }
         }
     }
-}
 
-for (i=1; i<=2; i++){
-    node (nodeName+i){
-        stage ('Get new application tomcat'+i){
-            updateApp(nodeName, i, tomcatDir, jkmanagerURL, appName, nexusURL, currentVersion)
-        }
+    stage ('Build new docker image'){
+        sh "docker build --build-arg currentVersion=$currentVersion -t $branch:$currentVersion ."
+        sh "docker tag $branch:$currentVersion $repositoryURL/$branch:$currentVersion"
+        sh "docker push $repositoryURL/$branch:$currentVersion"
+    }
+    
+    stage ('Deploy to docker'){
+        sh "docker service ls | grep $appName && docker service update --image $repositoryURL/$branch:$currentVersion $appName || docker service create --name $appName --replicas 3 --publish 8080:8080 $repositoryURL/$branch:$currentVersion"
+        sleep 20
+        sh "curl '$nodeURL' | grep 'Current version is $currentVersion' || exit 1"
     } 
-}
 
-node ('master'){
     stage ('Push and merge'){
         withCredentials([usernamePassword(credentialsId: '3cab255d-e955-41e9-ad2d-e31fbc2617c3', passwordVariable: 'gitPassword', usernameVariable: 'gitLogin')]) {
-            sh 'git add gradle.properties'
+            sh "git add gradle.properties"
             sh "git commit -m 'Added $currentVersion'"
-            sh "git push https://${gitLogin}:${gitPassword}@github.com/Sstrikers/devops_training task6"
-            sh 'git checkout master'
-            sh 'git merge task6'
+            sh "git push https://${gitLogin}:${gitPassword}@github.com/Sstrikers/devops_training $branch"
+            sh "git checkout master"
+            sh "git merge $branch"
             sh "git push https://${gitLogin}:${gitPassword}@github.com/Sstrikers/devops_training master"
             sh "git tag -a v$currentVersion -m 'Project v$currentVersion'"
             sh "git push https://${gitLogin}:${gitPassword}@github.com/Sstrikers/devops_training v$currentVersion"
@@ -58,15 +60,3 @@ def gitCheckout(branch, url){
     git branch: branch, url: url
 }
 
-def updateApp(nodeName, nodeNumber, tomcatDir, jkmanagerURL, appName, nexusURL, currentVersion){
-    sh "curl -G -d 'cmd=update&from=list&w=lb&sw=$nodeName$nodeNumber&vwa=1' $jkmanagerURL"
-    sh "sudo rm $tomcatDir$appName || true"
-    sh "sudo wget -P $tomcatDir $nexusURL"
-    sleep 10
-    def responseTomcat = httpRequest 'http://'+nodeName+nodeNumber+':8080/test'
-    if (responseTomcat.content.contains("Current version is "+currentVersion)){
-        sh "curl -G -d 'cmd=update&from=list&w=lb&sw=$nodeName$nodeNumber&vwa=0' $jkmanagerURL"
-    } else {
-        sh "exit 1"
-    }
-}
