@@ -1,1 +1,0 @@
-node.default['dockerdeploy']['registry_url'] = '192.168.56.11:5000'
