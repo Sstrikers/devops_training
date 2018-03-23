@@ -14,15 +14,18 @@ package 'install docker-ce' do
 	package_name 'docker-ce'
 end
 
-service 'docker' do
-	action [:enable, :start]
+directory '/etc/docker' do
+	owner 'root'
+	group 'root'
+	mode '700'
+	action :create
 end
 
 file '/etc/docker/daemon.json' do
-content '{ "insecure-registries" : ["'+node['dockerdeploy']['registry_url']+'"] }'
-action :create
+	content '{ "insecure-registries" : ["'+node['dockerdeploy']['registry_url']+'"] }'
+	action :create
 end
 
 service 'docker' do
-	action [:restart]
+	action [:enable, :start]
 end
