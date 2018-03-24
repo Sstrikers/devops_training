@@ -1,0 +1,1 @@
+Socket.tcp("www.ruby-lang.org", 10567, connect_timeout: 5) {}
