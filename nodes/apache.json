@@ -1,0 +1,11 @@
+{
+  "name": "apache",
+  "chef_environment": "prod",
+  "run_list": [
+  "recipe[dockerdeploy::deploy_docker_app]"
+]
+,
+  "normal": {
+    "tags": null
+  }
+}
