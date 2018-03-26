@@ -2,7 +2,7 @@
     "name": "prod",
     "description": "",
     "cookbook_versions": {
-        "dockerdeploy": "1.0.18"
+        "dockerdeploy": "1.0.19"
     },
     "json_class": "Chef::Environment",
     "chef_type": "environment",
