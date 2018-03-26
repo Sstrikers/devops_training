@@ -22,7 +22,7 @@ directory '/etc/docker' do
 end
 
 file '/etc/docker/daemon.json' do
-content '{ "insecure-registries" : ["'+node['dockerdeploy']['registry_url']+'"] }'
+content '{ "insecure-registries" : ["'+node['dockerdeploy']['registry_url']+':'+node['dockerdeploy']['registry_port']+'"] }'
 action :create
 end
 

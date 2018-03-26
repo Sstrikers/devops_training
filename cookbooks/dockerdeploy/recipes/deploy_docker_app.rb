@@ -19,7 +19,7 @@ if check_port?("192.168.56.10", 8082, 4)
 	runningContainerId = `docker ps -f publish=8080 | grep 8082 | awk '{print $1}'`.rstrip
 	puts "Container on port 8082 has ID "+runningContainerId
 	docker_container "test-#{node['dockerdeploy']['imageVersion']}-p8083" do
-		repo "#{node['dockerdeploy']['registry_url']}/task7"
+		repo "#{node['dockerdeploy']['registry_url']}:#{node['dockerdeploy']['registry_port']}/task7"
 		tag "#{node['dockerdeploy']['imageVersion']}"
 		restart_policy "always"
 		port "8083:8080"
@@ -32,7 +32,7 @@ if check_port?("192.168.56.10", 8082, 4)
 
 else
 	docker_container "test-#{node['dockerdeploy']['imageVersion']}-p8082" do
-		repo "#{node['dockerdeploy']['registry_url']}/task7"
+		repo "#{node['dockerdeploy']['registry_url']}:#{node['dockerdeploy']['registry_port']}/task7"
 		tag "#{node['dockerdeploy']['imageVersion']}"
 		restart_policy "always"
 		port "8082:8080"
